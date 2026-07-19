@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Live Logs{% endblock %}
+{% block breadcrumb %}Live Log Stream{% endblock %}
+{% block content %}
+<div class="card glass">
+<div class="card-head"><h3>Live PCE Log Stream</h3>
+<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+<select id="logHistoryLimit" class="select-sm">
+  <option value="400">400 lines</option>
+  <option value="1000">1000 lines</option>
+  <option value="3000">3000 lines</option>
+  <option value="10000">All recent</option>
+</select>
+<button id="btnLoadHistory" class="btn btn-ghost btn-sm">Reload History</button>
+<button id="btnLoadMore" class="btn btn-ghost btn-sm">Load More</button>
+<button id="btnClear" class="btn btn-ghost btn-sm">Clear</button>
+<button id="btnAutoscroll" class="btn btn-ghost btn-sm">Autoscroll: ON</button></div></div>
+<div class="muted" id="logHistoryInfo" style="text-align:left; padding:0 0 12px 0">Loading log history...</div>
+<div class="log-stream" id="logStream"><div class="line muted">Waiting for run events...</div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const stream = document.getElementById("logStream");
+const historyInfo = document.getElementById("logHistoryInfo");
+let autoscroll = true;
+let historyLimit = 400;
+document.getElementById("btnAutoscroll").addEventListener("click", (e) => {
+  autoscroll = !autoscroll;
+  e.target.textContent = "Autoscroll: " + (autoscroll?"ON":"OFF");
+});
+document.getElementById("btnClear").addEventListener("click", async () => {
+  if (!confirm("Clear semua live log dari dashboard dan hapus history log di server?")) return;
+  try {
+    const r = await fetch("/api/control/log-history/clear", {
+      method: "POST",
+      headers: window.getPceHeaders()
+    });
+    if (!r.ok) throw new Error("Failed to clear logs");
+    const data = await r.json();
+    stream.innerHTML = '<div class="line muted">Log history cleared from server.</div>';
+    historyInfo.textContent = `Log history cleared. Deleted ${data.deleted || 0} lines.`;
+  } catch (e) {
+    addLine("Failed to clear log history: " + e.message, "err");
+  }
+});
+document.getElementById("btnLoadHistory").addEventListener("click", () => {
+  historyLimit = parseInt(document.getElementById("logHistoryLimit").value, 10) || 400;
+  loadHistory(historyLimit);
+});
+document.getElementById("btnLoadMore").addEventListener("click", () => {
+  historyLimit = Math.min(10000, historyLimit + 1000);
+  document.getElementById("logHistoryLimit").value = String(historyLimit);
+  loadHistory(historyLimit);
+});
+function addLine(text, cls) {
+  const d = document.createElement("div");
+  d.className = "line " + (cls||"");
+  d.textContent = text;
+  stream.appendChild(d);
+  if (autoscroll) stream.scrollTop = stream.scrollHeight;
+}
+async function loadHistory(limit) {
+  try {
+    const r = await fetch("/api/control/log-history?limit=" + encodeURIComponent(limit || historyLimit), {
+      headers: window.getPceHeaders()
+    });
+    if (!r.ok) return;
+    const rows = await r.json();
+    historyInfo.textContent = rows.length
+      ? `Showing ${rows.length} log lines from history`
+      : "No log history found";
+    if (!rows.length) return;
+    stream.innerHTML = "";
+    rows.forEach(row => addLine(
+      `[${window.formatDateTime(row.created_at)}] ${row.message}`,
+      row.level === "err" ? "err" : row.level === "warn" ? "warn" : row.level === "ok" ? "ok" : ""
+    ));
+  } catch (e) {
+    historyInfo.textContent = "Failed to load log history";
+    addLine("Failed to load log history: " + e.message, "err");
+  }
+}
+document.addEventListener("sse:run_started", e => addLine((e.detail.data.whatif ? "TEST POLICY DIMULAI" : "RUN POLICY DIMULAI"), "ok"));
+document.addEventListener("sse:run_log", e => {
+  const l = e.detail.data.line || "";
+  const cls = /error|fail|exception/i.test(l) ? "err" : /warn|skip/i.test(l) ? "warn" : /\bok\b|success/i.test(l) ? "ok" : "";
+  addLine(l, cls);
+});
+document.addEventListener("sse:run_finished", e => addLine("PROSES SELESAI (exit="+e.detail.data.exit_code+")", "ok"));
+document.addEventListener("sse:log_cleared", e => {
+  const deleted = e.detail.data.deleted || 0;
+  stream.innerHTML = '<div class="line muted">Log history cleared from server.</div>';
+  historyInfo.textContent = `Log history cleared. Deleted ${deleted} lines.`;
+});
+loadHistory(historyLimit);
+</script>
+{% endblock %}

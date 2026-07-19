@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+{% block content %}
+<div class="card glass">
+<div class="card-head"><h3>Configuration</h3><span class="muted" style="font-size:12px">Main settings are file-based</span></div>
+<div style="padding:16px">
+<div class="detail-grid" style="margin-bottom:16px">
+<div><span class="lbl">Main Config File:</span> <span class="mono">{{ runtime_config_path }}</span></div>
+<div><span class="lbl">Environment File:</span> <span class="mono">{{ runtime_env_path }}</span></div>
+<div><span class="lbl">AD Settings Section:</span> <span class="mono">ActiveDirectory</span></div>
+<div><span class="lbl">Entra Settings Section:</span> <span class="mono">M365</span></div>
+</div>
+<div class="detail-grid">
+<div><span class="lbl">API Token:</span> <input type="password" id="apiToken" class="search-input" style="max-width:400px" placeholder="Paste token"></div>
+<div><span class="lbl">Version:</span> {{ runtime_version }}</div>
+<div><span class="lbl">Dashboard URL:</span> <span class="mono" id="dashUrl">-</span></div>
+<div><span class="lbl">Health:</span> <span class="pill pill-good" id="healthStatus">Checking...</span></div>
+</div>
+<div style="margin-top:16px; font-size:13px; color: var(--text-dim); line-height:1.7">
+<strong>Edit these files directly for real connection setup:</strong><br>
+`config/config.json` for non-secret connection settings and policy.<br>
+`.env` for runtime secrets and dashboard/runtime variables.
+</div>
+<div style="margin-top:12px; font-size:13px; color: var(--text-dim); line-height:1.7">
+<strong>Security note:</strong><br>
+API token is no longer auto-exposed into the page by default. Save the token here once per browser session as needed.
+</div>
+<div style="margin-top:12px; font-size:13px; color: var(--text-dim); line-height:1.7">
+<strong>Optional secret overrides:</strong><br>
+This build auto-prefers <span class="mono">.env</span> secrets. If legacy secrets are still found in <span class="mono">config.json</span>, they are migrated to runtime env and scrubbed from the file on next load/save.
+</div>
+<div style="margin-top:16px; font-size:13px; color: var(--text-dim); line-height:1.7">
+<strong>Email custom template file:</strong><br>
+<span class="mono" id="emailTemplatePath">/app/data/email_templates.json</span>
+</div>
+<div style="margin-top:20px">
+<button class="btn btn-primary" id="btnSaveToken">Save Token</button>
+<button class="btn btn-ghost" id="btnTestConn">Test Connection</button>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>Secret Health</h3><span class="muted" style="font-size:12px">Runtime secret source and readiness</span></div>
+<div style="padding:16px">
+<div class="detail-grid" id="secretHealthSummary">
+<div><span class="lbl">Configured</span><span class="mono">-</span></div>
+<div><span class="lbl">Env Path</span><span class="mono">-</span></div>
+</div>
+<div class="table-wrap" style="margin-top:16px">
+<table class="tbl">
+<thead><tr><th>Secret</th><th>Status</th><th>Source</th><th>Config Field</th></tr></thead>
+<tbody id="secretHealthBody"><tr><td colspan="4" class="muted">Loading...</td></tr></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>Config Doctor</h3><span class="muted" style="font-size:12px">Operational checks and fix suggestions</span></div>
+<div style="padding:16px">
+<div class="detail-grid" id="configDoctorSummary">
+<div><span class="lbl">Overall</span><span class="mono">-</span></div>
+<div><span class="lbl">Version</span><span class="mono">-</span></div>
+</div>
+<div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+<button class="btn btn-ghost" id="btnRunDoctor">Run Doctor</button>
+</div>
+<div class="table-wrap" style="margin-top:16px">
+<table class="tbl">
+<thead><tr><th>Check</th><th>Status</th><th>Summary</th><th>Suggestion</th></tr></thead>
+<tbody id="configDoctorBody"><tr><td colspan="4" class="muted">Loading...</td></tr></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>Quick Config</h3><span class="muted" style="font-size:12px">Frequently changed settings from config.json</span></div>
+<div style="padding:16px">
+<div class="detail-grid" style="margin-bottom:16px">
+<div><span class="lbl">Editable Config File</span><span class="mono" id="quickConfigPath">-</span></div>
+<div><span class="lbl">Purpose</span><span class="mono">Policy, AD connection, sender, and dashboard base URL</span></div>
+</div>
+<div class="scope-grid">
+<div class="scope-box">
+<div class="lbl" style="margin-bottom:10px">Policy</div>
+<div class="form-grid">
+<div><div class="lbl">Max Password Age</div><input id="qcMaxPasswordAgeDays" type="number" class="search-input compact-input"></div>
+<div><div class="lbl">Warning Days</div><input id="qcWarningDays" type="text" class="search-input compact-input" placeholder="7,3,1"></div>
+<div><div class="lbl">Grace After Expiry</div><input id="qcGraceDays" type="number" class="search-input compact-input"></div>
+<div><div class="lbl">Force Change Day</div><input id="qcForceChangeDay" type="number" class="search-input compact-input"></div>
+<div><div class="lbl">After Grace</div><select id="qcActionAfterGrace" class="select-sm compact-select"><option value="Disable">Disable</option><option value="ForceChange">ForceChange</option><option value="None">None</option></select></div>
+</div>
+<div class="policy-help-card">
+<div class="policy-help-title">Arti action policy</div>
+<div class="policy-help-line"><strong>Force Change Day</strong>: hari kapan user mulai dipaksa ganti password saat login berikutnya. Nilai <span class="mono">0</span> artinya saat hari expired.</div>
+<div class="policy-help-line"><strong>After Grace = Disable</strong>: setelah masa grace lewat, akun akan dinonaktifkan otomatis.</div>
+<div class="policy-help-line"><strong>After Grace = ForceChange</strong>: setelah masa grace lewat, akun tidak didisable, tetapi tetap dipaksa ganti password saat login.</div>
+<div class="policy-help-line"><strong>After Grace = None</strong>: setelah masa grace lewat, sistem hanya mencatat status tanpa action otomatis ke akun.</div>
+</div>
+</div>
+<div class="scope-box">
+<div class="lbl" style="margin-bottom:10px">Active Directory</div>
+<div class="form-grid">
+<div><div class="lbl">Server</div><input id="qcAdServer" type="text" class="search-input compact-input"></div>
+<div><div class="lbl">Port</div><input id="qcAdPort" type="number" class="search-input compact-input"></div>
+<div><div class="lbl">Bind User</div><input id="qcAdBindUser" type="text" class="search-input compact-input"></div>
+<div><div class="lbl">Bind Password</div><input id="qcAdBindPassword" type="password" class="search-input compact-input" placeholder="Leave blank to keep current password"></div>
+<div><div class="lbl">Search Base</div><input id="qcAdSearchBase" type="text" class="search-input compact-input"></div>
+<div><div class="lbl">Search Filter</div><input id="qcAdSearchFilter" type="text" class="search-input compact-input"></div>
+<div><label class="check-row"><input id="qcAdUseSsl" type="checkbox"> Use SSL for LDAP bind</label></div>
+</div>
+</div>
+<div class="scope-box">
+<div class="lbl" style="margin-bottom:10px">Mail / Dashboard</div>
+<div class="form-grid">
+<div><div class="lbl">Tenant ID</div><input id="qcTenantId" type="text" class="search-input compact-input"></div>
+<div><div class="lbl">Client ID</div><input id="qcClientId" type="text" class="search-input compact-input"></div>
+<div><div class="lbl">Reminder Sender</div><input id="qcReminderSender" type="email" class="search-input compact-input"></div>
+<div><div class="lbl">From Address</div><input id="qcFromAddress" type="email" class="search-input compact-input"></div>
+<div><div class="lbl">From Display Name</div><input id="qcFromDisplayName" type="text" class="search-input compact-input"></div>
+<div><div class="lbl">Dashboard Base URL</div><input id="qcDashboardBaseUrl" type="text" class="search-input compact-input"></div>
+<div style="grid-column:1 / -1"><div class="lbl">Admin Recipients</div><textarea id="qcAdminRecipients" class="template-editor scope-editor compact-editor" placeholder="admin@example.com&#10;helpdesk@example.com"></textarea></div>
+<div><label class="check-row"><input id="qcRevokeSessionsOnLock" type="checkbox"> Revoke M365 sessions when account is locked</label></div>
+</div>
+</div>
+</div>
+<div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+<button class="btn btn-primary" id="btnSaveQuickConfig">Save Quick Config</button>
+<button class="btn btn-ghost" id="btnTestQuickConfig">Test Quick Config</button>
+</div>
+<div class="mode-policy-context" style="margin-top:16px">
+<div class="lbl" style="margin-bottom:8px">Quick Config Test Result</div>
+<div id="quickConfigTestGrid" class="mode-policy-grid">
+<div><span class="lbl">AD Status</span><span class="mono">-</span></div>
+<div><span class="lbl">Entra Status</span><span class="mono">-</span></div>
+<div><span class="lbl">Sender</span><span class="mono">-</span></div>
+<div><span class="lbl">Display Name Note</span><span class="mono">-</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>Execution Mode</h3><span class="muted" style="font-size:12px">Choose how policy is applied</span></div>
+<div style="padding:16px">
+<div class="mode-current-bar">
+<div class="mode-current-copy">
+<div class="lbl">Current Active Mode</div>
+<div class="mode-current-title">
+<span class="pill pill-neutral" id="runModeIndicator">Loading...</span>
+<strong id="runModeIndicatorText">Loading mode...</strong>
+</div>
+<div class="mode-current-note" id="runModeCurrentNote">Mode aktif akan menentukan apakah sistem hanya memantau, hanya mengirim reminder, atau menjalankan enforcement.</div>
+</div>
+<div class="mode-current-meta">
+<div class="lbl">Config File</div>
+<div class="mono" id="runModeConfigPath">-</div>
+</div>
+</div>
+<div class="mode-policy-context" style="margin-bottom:16px">
+<div class="lbl" style="margin-bottom:8px">Scheduler Reminder</div>
+<div id="schedulerStatusGrid" class="mode-policy-grid">
+<div><span class="lbl">Frequency</span><span class="mono">-</span></div>
+<div><span class="lbl">Next Run</span><span class="mono">-</span></div>
+<div><span class="lbl">Timezone</span><span class="mono">-</span></div>
+<div><span class="lbl">Cron</span><span class="mono">-</span></div>
+</div>
+<div class="schedule-note" id="schedulerStatusNote">Reminder scheduler akan tampil di sini.</div>
+</div>
+<div class="mode-panel">
+<div class="mode-panel-top">
+<div style="flex:1; min-width:220px">
+<div class="lbl" style="margin-bottom:10px">Mode Pilihan</div>
+<div id="runModeCards" class="mode-card-grid">
+<button type="button" class="mode-card mode-card-loading">Loading mode...</button>
+</div>
+<input type="hidden" id="runModeSelect" value="monitoring_only">
+</div>
+<div class="mode-panel-actions">
+<button class="btn btn-ghost" id="btnSyncDirectory">Sync Directory Now</button>
+<button class="btn btn-primary" id="btnSaveRunMode">Save Mode</button>
+</div>
+</div>
+<div class="mode-selection-note" id="runModeSelectionNote">Mode yang dipilih akan dijelaskan di sini sebelum disimpan.</div>
+<div class="mode-summary" id="runModeSummary">Loading mode summary...</div>
+<div class="mode-effects">
+<div class="lbl" style="margin-bottom:8px">Dampak Mode Aktif</div>
+<ul id="runModeEffects" class="mode-effects-list">
+<li>Loading mode data...</li>
+</ul>
+</div>
+<div class="mode-policy-context">
+<div class="lbl" style="margin-bottom:8px">Sync Directory Status</div>
+<div id="syncStatusGrid" class="mode-policy-grid">
+<div><span class="lbl">Status</span><span class="mono">-</span></div>
+<div><span class="lbl">Action</span><span class="mono">-</span></div>
+<div><span class="lbl">Started</span><span class="mono">-</span></div>
+<div><span class="lbl">Finished</span><span class="mono">-</span></div>
+</div>
+</div>
+<div class="mode-policy-context">
+<div class="lbl" style="margin-bottom:8px">Policy Saat Ini</div>
+<div id="runModePolicyContext" class="mode-policy-grid">
+<div><span class="lbl">Warning Days</span><span class="mono">-</span></div>
+<div><span class="lbl">Force Change Day</span><span class="mono">-</span></div>
+<div><span class="lbl">Grace Days</span><span class="mono">-</span></div>
+<div><span class="lbl">After Grace</span><span class="mono">-</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>Policy Scope</h3><span class="muted" style="font-size:12px">Exclude or allow specific users from policy</span></div>
+<div style="padding:16px">
+<div class="scope-summary">
+<div class="scope-summary-title">Cara baca Scope Policy</div>
+<div class="scope-summary-line"><strong>Excluded Users</strong>: user tidak ikut reminder, tidak ikut enforcement, dan diabaikan dari policy.</div>
+<div class="scope-summary-line"><strong>Excluded Groups</strong>: semua anggota group itu ikut dikecualikan dari policy.</div>
+<div class="scope-summary-line"><strong>Whitelisted Users</strong>: user dipaksa tetap ikut policy, meskipun namanya juga ada di exclude user atau exclude group.</div>
+<div class="scope-summary-line"><strong>Prioritas rule</strong>: <span class="mono">Whitelist menang atas Exclude</span>.</div>
+</div>
+<div class="detail-grid" style="margin-bottom:16px">
+<div><span class="lbl">Target OU</span><span class="mono" id="scopeTargetOu">-</span></div>
+<div><span class="lbl">Search Base</span><span class="mono" id="scopeSearchBase">-</span></div>
+<div><span class="lbl">Search Filter</span><span class="mono" id="scopeSearchFilter">-</span></div>
+<div><span class="lbl">Rule File</span><span class="mono" id="scopeRulesPath">-</span></div>
+</div>
+<div class="scope-grid">
+<div class="scope-box">
+<div class="lbl" style="margin-bottom:8px">Excluded Users</div>
+<textarea id="scopeExcludedUsers" class="template-editor scope-editor" placeholder="svc_backup&#10;svc_monitoring&#10;breakglass_admin"></textarea>
+<div class="scope-help">Pakai untuk akun yang memang <strong>harus dibebaskan</strong> dari policy. Cocok untuk service account, breakglass, akun integrasi, atau mailbox sistem. Satu baris satu akun, bisa isi <span class="mono">samAccountName</span>, UPN, email, atau DN.</div>
+</div>
+<div class="scope-box">
+<div class="lbl" style="margin-bottom:8px">Excluded Groups</div>
+<textarea id="scopeExcludedGroups" class="template-editor scope-editor" placeholder="Service Accounts"></textarea>
+<div class="scope-help">Pakai kalau pengecualiannya lebih enak dikelola per group. Semua anggota group ini akan <strong>otomatis tidak ikut</strong> reminder maupun enforcement, kecuali user tersebut juga masuk whitelist.</div>
+</div>
+<div class="scope-box">
+<div class="lbl" style="margin-bottom:8px">Whitelisted Users</div>
+<textarea id="scopeWhitelistedUsers" class="template-editor scope-editor" placeholder="breakglass.admin@example.com"></textarea>
+<div class="scope-help">Pakai hanya untuk akun yang <strong>harus tetap diproses</strong> policy. Kalau user ada di whitelist dan juga ada di exclude, maka sistem akan tetap mengikutkan user tersebut ke policy. Jadi isi bagian ini dengan hati-hati.</div>
+</div>
+</div>
+<div style="margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+<label class="check-row"><input id="scopeIncludeDisabledAccounts" type="checkbox"> Include disabled accounts saat pembacaan scope</label>
+<button class="btn btn-primary" id="btnSaveScopeRules">Save Scope Rules</button>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>Email Template Editor</h3><span class="muted" style="font-size:12px">Custom subject + HTML for each reminder period</span></div>
+<div style="padding:16px">
+<div class="detail-grid" style="margin-bottom:16px">
+<div>
+<span class="lbl">Template Period:</span>
+<select id="templateKey" class="select-sm" style="min-width:220px">
+<option value="warn_7">Warning 7 Days</option>
+<option value="warn_3">Warning 3 Days</option>
+<option value="warn_1">Warning 1 Day</option>
+<option value="expired">Expired</option>
+</select>
+</div>
+<div>
+<span class="lbl">Placeholders:</span>
+<div class="mono" id="templatePlaceholders">-</div>
+</div>
+</div>
+<div style="margin-bottom:14px">
+<div class="lbl" style="margin-bottom:6px">Email Subject</div>
+<input type="text" id="templateSubject" class="search-input" style="max-width:none">
+</div>
+<div style="margin-bottom:14px">
+<div class="lbl" style="margin-bottom:6px">Email HTML</div>
+<textarea id="templateHtml" class="template-editor"></textarea>
+</div>
+<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px">
+<button class="btn btn-primary" id="btnSaveTemplate">Save Template</button>
+<button class="btn btn-ghost" id="btnPreviewTemplate">Preview</button>
+<input type="text" id="templateSampleName" class="search-input" style="max-width:240px" placeholder="Nama user simulasi">
+<input type="email" id="templateSampleUpn" class="search-input" style="max-width:280px" placeholder="UPN user simulasi">
+<input type="email" id="templateTestEmail" class="search-input" style="max-width:320px" placeholder="Email tujuan kirim">
+<button class="btn btn-warn" id="btnSendTestTemplate">Send Test</button>
+<button class="btn btn-ghost" id="btnResetTemplate">Reset Default</button>
+</div>
+<div class="detail-grid">
+<div>
+<div class="lbl" style="margin-bottom:6px">Preview Subject</div>
+<div class="glass" style="padding:12px; border-radius:12px; min-height:44px" id="templatePreviewSubject">-</div>
+</div>
+<div>
+<div class="lbl" style="margin-bottom:6px">HTML Preview</div>
+<iframe id="templatePreviewFrame" class="template-preview-frame"></iframe>
+</div>
+</div>
+</div>
+</div>
+<div class="card glass" style="margin-top:20px">
+<div class="card-head"><h3>About</h3></div>
+<div style="padding:16px;line-height:1.8">
+<p><strong>Password Compliance Enforcer v{{ runtime_version }}</strong></p>
+<p>Enterprise password rotation enforcement for Active Directory and Microsoft 365.</p>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/settings.js?v={{ asset_version }}"></script>
+{% endblock %}

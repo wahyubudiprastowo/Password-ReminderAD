@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCE Dashboard - Login</title>
+<link rel="stylesheet" href="/static/css/glass.css?v={{ asset_version }}">
+<link rel="stylesheet" href="/static/css/dashboard.css?v={{ asset_version }}">
+<link rel="icon" href="/static/img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+<main class="main" style="margin-left:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <section class="card glass" style="width:100%;max-width:460px;">
+    <div class="card-head">
+      <h3>PCE Login</h3>
+      <span class="muted" style="font-size:12px">Sign in with the dashboard API token</span>
+    </div>
+    <div style="padding:20px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <img src="/static/img/logo.svg" alt="PCE" style="width:56px;height:56px;">
+        <div>
+          <div style="font-size:22px;font-weight:700;">Password Compliance Enforcement</div>
+          <div class="muted">Protected dashboard access</div>
+        </div>
+      </div>
+      <p class="muted" style="margin:0 0 14px 0;line-height:1.6;">
+        Enter the API token to create a browser session. The token is verified by the server and stored in an `HttpOnly` cookie.
+      </p>
+      <label class="field-label" for="loginToken">API Token</label>
+      <input id="loginToken" type="password" class="search-input" placeholder="Paste API token">
+      <div id="loginError" class="muted" style="display:none;color:#fca5a5;margin-top:10px;"></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:18px;">
+        <button id="loginSubmit" class="btn btn-primary">Sign In</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/static/js/theme.js?v={{ asset_version }}"></script>
+<script>
+async function submitLogin() {
+  const token = document.getElementById("loginToken").value.trim();
+  const error = document.getElementById("loginError");
+  error.style.display = "none";
+  error.textContent = "";
+  if (!token) {
+    error.textContent = "API token is required.";
+    error.style.display = "block";
+    return;
+  }
+  try {
+    const r = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+    if (!r.ok) {
+      let detail = "Login failed";
+      try {
+        const body = await r.json();
+        detail = body.detail || detail;
+      } catch (_) {}
+      throw new Error(detail);
+    }
+    location.href = "/";
+  } catch (e) {
+    error.textContent = e.message || "Login failed";
+    error.style.display = "block";
+  }
+}
+document.getElementById("loginSubmit").addEventListener("click", submitLogin);
+document.getElementById("loginToken").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submitLogin();
+});
+</script>
+</body>
+</html>

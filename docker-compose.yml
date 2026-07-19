@@ -1,0 +1,38 @@
+services:
+  pce-dashboard:
+    build: .
+    container_name: pce-dashboard
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${PCE_HOST_PORT:-18080}:8080"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      PCE_API_TOKEN: ${PCE_API_TOKEN}
+      PCE_INVOKE_PATH: ${PCE_INVOKE_PATH}
+      PCE_PS_EXE: ${PCE_PS_EXE}
+      PCE_CONFIG_PATH: ${PCE_CONFIG_PATH:-/app/config/config.json}
+      PCE_RUNNER_MODE: python
+      PCE_TIMEZONE: ${PCE_TIMEZONE}
+      PCE_ENV_PATH: ${PCE_ENV_PATH:-/app/.env}
+      PCE_SESSION_COOKIE_SECURE: ${PCE_SESSION_COOKIE_SECURE:-false}
+      PCE_EXPOSE_DEFAULT_API_TOKEN: ${PCE_EXPOSE_DEFAULT_API_TOKEN:-false}
+      PCE_AD_BIND_PASSWORD: ${PCE_AD_BIND_PASSWORD:-}
+      PCE_M365_CLIENT_SECRET: ${PCE_M365_CLIENT_SECRET:-}
+      PCE_NOTIFICATION_SMTP_PASSWORD: ${PCE_NOTIFICATION_SMTP_PASSWORD:-}
+      PYTHONUNBUFFERED: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - pce-net
+
+networks:
+  pce-net:
+    driver: bridge

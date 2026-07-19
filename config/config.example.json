@@ -1,0 +1,102 @@
+{
+  "Policy": {
+    "RunMode": "monitoring_only",
+    "MaxPasswordAgeDays": 90,
+    "WarningDays": [7, 3, 1],
+    "TemporaryExpiredGraceDays": 0,
+    "TemporaryExpiredGraceStart": "",
+    "GracePeriodDaysAfterExpiry": 3,
+    "ActionAfterGrace": "Disable",
+    "ForceChangeAtLogonOnDay": 0
+  },
+  "Scope": {
+    "TargetOU": "OU=Users,DC=example,DC=com",
+    "ExcludedUsers": ["svc_backup", "svc_monitoring", "breakglass_admin"],
+    "ExcludedGroups": ["Service Accounts"],
+    "WhitelistedUsers": [],
+    "IncludeDisabledAccounts": false
+  },
+  "ActiveDirectory": {
+    "Enabled": true,
+    "Server": "dc01.example.com",
+    "Port": 389,
+    "UseSsl": false,
+    "PasswordResetPort": 636,
+    "PasswordResetUseSsl": true,
+    "PasswordResetLdapsOnly": true,
+    "ValidateServerCertificate": false,
+    "CaCertFile": "",
+    "BindUser": "svc_pce@example.com",
+    "BindPassword": "CHANGE-ME",
+    "SearchBase": "OU=Users,DC=example,DC=com",
+    "SearchFilter": "(&(objectCategory=person)(objectClass=user))",
+    "ConnectTimeoutSeconds": 10
+  },
+  "M365": {
+    "Enabled": true,
+    "AuthMethod": "client_secret",
+    "TenantId": "00000000-0000-0000-0000-000000000000",
+    "ClientId": "00000000-0000-0000-0000-000000000000",
+    "ObjectId": "00000000-0000-0000-0000-000000000000",
+    "SupportedAccountTypes": "My organization only",
+    "ClientSecret": "CHANGE-ME",
+    "ClientSecretId": "00000000-0000-0000-0000-000000000000",
+    "CertificateThumbprint": "",
+    "GraphBaseUrl": "https://graph.microsoft.com/v1.0",
+    "ReminderSender": "noreply@example.com",
+    "RevokeSessionsOnLock": true
+  },
+  "Notification": {
+    "SmtpServer": "smtp.office365.com",
+    "SmtpPort": 587,
+    "UseSsl": true,
+    "ConnectionSecurity": "starttls",
+    "AuthMethod": "oauth2",
+    "Username": "noreply@example.com",
+    "Password": "CHANGE-ME",
+    "FromAddress": "noreply@example.com",
+    "FromDisplayName": "IT Compliance",
+    "CredentialVaultName": "PCE-SmtpCred",
+    "AdminRecipients": ["admin@example.com"],
+    "ImapServer": "outlook.office365.com",
+    "ImapPort": 993,
+    "ImapConnectionSecurity": "ssl/tls",
+    "ImapAuthMethod": "oauth2"
+  },
+  "Teams": {
+    "Enabled": false,
+    "WebhookUrls": {
+      "AdminDigest": "",
+      "SecurityAlerts": "",
+      "UserNotifications": ""
+    },
+    "MentionAdminsOnLock": true,
+    "AdminUpnsToMention": ["admin@example.com"],
+    "SendUserDMs": false,
+    "PostAdminDigest": true,
+    "PostSafetyAlerts": true,
+    "MaxRetries": 3,
+    "RetryDelaySeconds": 5,
+    "TimeoutSeconds": 30,
+    "ThrottleMsBetweenPosts": 250
+  },
+  "Dashboard": {
+    "Enabled": true,
+    "BaseUrl": "http://localhost:18080",
+    "ApiToken": "CHANGE-ME-WITH-A-LONG-RANDOM-TOKEN"
+  },
+  "Report": {
+    "SendDailyDigest": true,
+    "AttachCsv": true
+  },
+  "Logging": {
+    "Path": "/app/logs",
+    "RetentionDays": 90,
+    "Verbose": true
+  },
+  "Safety": {
+    "WhatIfMode": false,
+    "MaxDisablesPerRun": 25,
+    "RequireConfirmationAboveThreshold": true
+  }
+}

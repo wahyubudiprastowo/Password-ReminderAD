@@ -1,0 +1,52 @@
+# Runtime data
+data/
+logs/
+backup/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Secrets and local deployment configuration
+.env
+.env.*
+!.env.example
+config/config.json
+config/*.local.json
+*.secret
+*.secrets
+*.key
+*.pem
+*.pfx
+*.p12
+*.crt
+*.cer
+*.csr
+*.kdb
+*.jks
+id_rsa*
+id_ed25519*
+
+# Python/cache/build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Archives and OS files
+*.zip
+*.tar
+*.tar.gz
+*.7z
+.DS_Store
+Thumbs.db

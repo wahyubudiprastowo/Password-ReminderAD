@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}All Actions{% endblock %}
+{% block breadcrumb %}All Action Logs{% endblock %}
+{% block content %}
+<div class="card glass">
+<div class="card-head">
+  <h3>All Actions</h3>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+    <select id="actionsPageSize" class="select-sm">
+      <option value="100">100 rows</option>
+      <option value="250">250 rows</option>
+      <option value="500">500 rows</option>
+      <option value="1000">1000 rows</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="loadAllActions()">Refresh</button>
+  </div>
+</div>
+<div class="table-wrap">
+<table class="tbl">
+<thead><tr><th>User</th><th>Action</th><th>Days</th><th>Email</th><th>Delivery</th><th>Time</th><th>Run ID</th></tr></thead>
+<tbody id="allActionsTbody"><tr><td colspan="7" class="muted">Loading...</td></tr></tbody>
+</table>
+</div>
+<div class="pagination">
+  <div class="pagi-info">Showing <span id="actionsFrom">0</span>-<span id="actionsTo">0</span> of <span id="actionsTotal">0</span></div>
+  <div class="pagi-controls">
+    <button class="btn btn-ghost btn-sm" id="actionsFirst">First</button>
+    <button class="btn btn-ghost btn-sm" id="actionsPrev">Prev</button>
+    <span class="mono" id="actionsPageLabel">Page 1</span>
+    <button class="btn btn-ghost btn-sm" id="actionsNext">Next</button>
+  </div>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const state = { page: 1, size: 100, total: 0 };
+async function fetchJSON(url) {
+  const r = await fetch(url, { headers: window.getPceHeaders() });
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json();
+}
+function pillForAction(action) {
+  return action === "Disabled" ? "pill-danger" : action === "Warned" || action === "ForcedChange" ? "pill-warn" : "pill-good";
+}
+function deliveryHtml(a) {
+  if (!a.email_status) return "<span class='muted'>Not sent</span>";
+  const cls = a.email_status === "sent" ? "pill-good" : a.email_status === "failed" ? "pill-danger" : "pill-neutral";
+  return "<span class='pill " + cls + "'>" + a.email_status.toUpperCase() + "</span> <span class='muted'>#" + (a.email_attempt || 1) + " " + (a.email_template || "") + "</span>";
+}
+async function loadAllActions() {
+  try {
+    state.size = parseInt(document.getElementById("actionsPageSize").value, 10) || 100;
+    const data = await fetchJSON(`/api/actions?page=${state.page}&size=${state.size}`);
+    state.total = data.total || 0;
+    const tbody = document.getElementById("allActionsTbody");
+    if (!data.items.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="muted">No actions found</td></tr>';
+    } else {
+      tbody.innerHTML = data.items.map(a => "<tr>"+
+        "<td><strong>"+(a.sam||"-")+"</strong></td>"+
+        "<td><span class='pill "+pillForAction(a.action)+"'>"+a.action+"</span></td>"+
+        "<td>"+a.days_left+"</td>"+
+        "<td class='muted'>"+(a.email||"-")+"</td>"+
+        "<td>"+deliveryHtml(a)+"</td>"+
+        "<td class='muted'>"+window.formatDateTime(a.timestamp)+"</td>"+
+        "<td class='mono muted'>"+(a.run_id||"-")+"</td>"+
+      "</tr>").join("");
+    }
+    const from = state.total === 0 ? 0 : ((state.page - 1) * state.size) + 1;
+    const to = Math.min(state.page * state.size, state.total);
+    document.getElementById("actionsFrom").textContent = from;
+    document.getElementById("actionsTo").textContent = to;
+    document.getElementById("actionsTotal").textContent = state.total;
+    document.getElementById("actionsPageLabel").textContent = `Page ${state.page}`;
+    document.getElementById("actionsFirst").disabled = state.page <= 1;
+    document.getElementById("actionsPrev").disabled = state.page <= 1;
+    document.getElementById("actionsNext").disabled = to >= state.total;
+  } catch (e) {
+    document.getElementById("allActionsTbody").innerHTML = '<tr><td colspan="7" class="muted">Failed to load actions: '+e.message+'</td></tr>';
+  }
+}
+document.getElementById("actionsPageSize").addEventListener("change", () => { state.page = 1; loadAllActions(); });
+document.getElementById("actionsFirst").addEventListener("click", () => { state.page = 1; loadAllActions(); });
+document.getElementById("actionsPrev").addEventListener("click", () => { if (state.page > 1) { state.page -= 1; loadAllActions(); } });
+document.getElementById("actionsNext").addEventListener("click", () => { state.page += 1; loadAllActions(); });
+document.addEventListener("sse:run_completed", loadAllActions);
+loadAllActions();
+</script>
+{% endblock %}

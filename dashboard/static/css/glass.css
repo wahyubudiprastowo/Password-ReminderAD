@@ -1,0 +1,35 @@
+:root {
+  --bg: #0a0e1a; --bg-2: #131a2e;
+  --glass-bg: rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  --text: #e8ecf5; --text-dim: #a8b0c8; --muted: #6c7593;
+  --primary: #6366f1; --primary-2: #8b5cf6;
+  --good: #22c55e; --warn: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+  --radius: 16px; --radius-sm: 10px;
+}
+[data-theme="light"] {
+  --bg: #f4f6fb; --bg-2: #e9edf6;
+  --glass-bg: rgba(255,255,255,0.7);
+  --glass-border: rgba(20,25,50,0.08);
+  --text: #1a2035; --text-dim: #4a5578; --muted: #8892af;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", -apple-system, sans-serif; color: var(--text);
+  min-height: 100vh; overflow-x: hidden; position: relative;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 100%);
+}
+.bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .35; animation: float 20s ease-in-out infinite; }
+.orb-1 { width: 400px; height: 400px; top: -100px; left: -100px; background: var(--primary); }
+.orb-2 { width: 500px; height: 500px; bottom: -150px; right: -150px; background: var(--primary-2); animation-delay: -7s; }
+.orb-3 { width: 350px; height: 350px; top: 40%; left: 60%; background: #ec4899; animation-delay: -14s; }
+@keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,-30px) scale(1.1); } }
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}

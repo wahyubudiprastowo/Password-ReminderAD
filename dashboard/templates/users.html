@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block breadcrumb %}Users{% endblock %}
+{% block content %}
+<div class="stats-bar">
+<div class="stat-item glass" data-filter="all"><div class="stat-icon info">A</div><div><div class="stat-val" id="statAll">-</div><div class="stat-lbl">All</div></div></div>
+<div class="stat-item glass" data-filter="compliant"><div class="stat-icon good">C</div><div><div class="stat-val" id="statCompliant">-</div><div class="stat-lbl">Compliant</div></div></div>
+<div class="stat-item glass" data-filter="expiring"><div class="stat-icon warn">W</div><div><div class="stat-val" id="statExpiring">-</div><div class="stat-lbl">Expiring</div></div></div>
+<div class="stat-item glass" data-filter="expired"><div class="stat-icon danger">E</div><div><div class="stat-val" id="statExpired">-</div><div class="stat-lbl">Expired</div></div></div>
+<div class="stat-item glass" data-filter="locked"><div class="stat-icon danger">L</div><div><div class="stat-val" id="statLocked">-</div><div class="stat-lbl">Locked</div></div></div>
+<div class="stat-item glass" data-filter="disabled"><div class="stat-icon danger">D</div><div><div class="stat-val" id="statDisabled">-</div><div class="stat-lbl">Disabled</div></div></div>
+</div>
+<div class="scope-summary" style="margin-bottom:18px">
+<div class="scope-summary-title">Account status guide</div>
+<div class="scope-summary-line"><strong>Locked</strong>: the account is in AD lockout state, usually caused by failed sign-in attempts. It can normally be unlocked without disabling the account.</div>
+<div class="scope-summary-line"><strong>Disabled</strong>: the account has been turned off in AD by an admin or by policy. The user cannot sign in until the account is enabled again.</div>
+<div class="scope-summary-line"><strong>Policy note</strong>: users listed in <span class="mono">Excluded Users</span> or <span class="mono">Excluded Groups</span> are skipped by automatic enforcement.</div>
+</div>
+<div class="card glass toolbar">
+<div class="toolbar-left">
+<div class="search-wrap"><span class="search-icon">Q</span><input type="text" id="userSearch" class="search-input" placeholder="Search name, SAM, UPN, email..."><button id="btnClearSearch" class="btn-clear">X</button></div>
+<div class="filter-pills" id="filterPills">
+<button class="pill-btn active" data-status="all">All</button>
+<button class="pill-btn" data-status="compliant">Compliant</button>
+<button class="pill-btn" data-status="expiring">Expiring</button>
+<button class="pill-btn" data-status="expired">Expired</button>
+<button class="pill-btn" data-status="locked">Locked</button>
+<button class="pill-btn" data-status="disabled">Disabled</button>
+</div>
+</div>
+<div class="toolbar-right">
+<select id="pageSize" class="select-sm"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option></select>
+<button id="btnUnlockExpired" class="btn btn-warn btn-sm">Unlock Expired</button>
+<button id="btnRefresh" class="btn btn-ghost btn-sm">Refresh</button>
+<button id="btnExportCsv" class="btn btn-ghost btn-sm">CSV</button>
+</div>
+</div>
+<div class="bulk-bar glass" id="bulkBar" style="display:none">
+<div class="bulk-info"><strong id="selCount">0</strong> selected <button class="btn-link" id="btnClearSel">Clear</button></div>
+<div class="bulk-actions">
+<button class="btn btn-ghost btn-sm" id="btnBulkNotify">Send Email</button>
+<button class="btn btn-warn btn-sm" id="btnBulkForce">Force Change</button>
+<button class="btn btn-info btn-sm" id="btnBulkUnlock">Unlock</button>
+<button class="btn btn-primary btn-sm" id="btnBulkEnable">Enable</button>
+<button class="btn btn-danger btn-sm" id="btnBulkDisable">Disable</button>
+</div>
+</div>
+<div class="card glass">
+<div class="table-wrap">
+<table class="tbl user-tbl">
+<thead><tr>
+<th class="col-check"><input type="checkbox" id="chkAll" class="chk"></th>
+<th data-sort="display_name" class="sortable">User</th>
+<th data-sort="upn" class="sortable">UPN</th>
+<th data-sort="password_last_set" class="sortable">Last Changed</th>
+<th data-sort="password_expiry" class="sortable">Expires</th>
+<th data-sort="days_until_expiry" class="sortable sort-asc">Days Left</th>
+<th>Status</th>
+<th>Email Status</th>
+<th class="col-actions">Actions</th>
+</tr></thead>
+<tbody id="usersTbody"><tr><td colspan="9" class="muted"><div class="loading-state"><div class="spinner"></div><div>Loading data...</div></div></td></tr></tbody>
+</table>
+</div>
+<div class="pagination">
+<div class="pagi-info">Showing <strong id="pagiFrom">0</strong>-<strong id="pagiTo">0</strong> of <strong id="pagiTotal">0</strong></div>
+<div class="pagi-controls">
+<button class="btn btn-ghost btn-sm" id="btnFirst" disabled>First</button>
+<button class="btn btn-ghost btn-sm" id="btnPrev" disabled>Prev</button>
+<span class="pagi-pages" id="pagiPages"></span>
+<button class="btn btn-ghost btn-sm" id="btnNext" disabled>Next</button>
+<button class="btn btn-ghost btn-sm" id="btnLast" disabled>Last</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="modalBackdrop" style="display:none">
+<div class="modal glass" id="userModal">
+<div class="modal-head"><h3 id="modalTitle">User Details</h3><button class="btn-icon" id="btnCloseModal">X</button></div>
+<div class="modal-body" id="modalBody"><div class="loading-state"><div class="spinner"></div></div></div>
+<div class="modal-foot" id="modalFoot"></div>
+</div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/users.js?v={{ asset_version }}"></script>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="kpi-grid">
+<div class="kpi-card glass"><div class="kpi-icon good">C</div><div><div class="kpi-val" id="kpiCompliant">-</div><div class="kpi-lbl">Compliant</div></div></div>
+<div class="kpi-card glass"><div class="kpi-icon warn">W</div><div><div class="kpi-val" id="kpiExpiring">-</div><div class="kpi-lbl">Expiring 7d</div></div></div>
+<div class="kpi-card glass"><div class="kpi-icon danger">E</div><div><div class="kpi-val" id="kpiExpired">-</div><div class="kpi-lbl">Expired</div></div></div>
+<div class="kpi-card glass"><div class="kpi-icon danger">L</div><div><div class="kpi-val" id="kpiLocked">-</div><div class="kpi-lbl">Locked</div></div></div>
+<div class="kpi-card glass"><div class="kpi-icon info">T</div><div><div class="kpi-val" id="kpiTotal">-</div><div class="kpi-lbl">Total</div></div></div>
+<div class="kpi-card glass"><div class="kpi-icon info">R</div><div><div class="kpi-val" id="kpiLastRun">-</div><div class="kpi-lbl">Last Run</div></div></div>
+</div>
+<div class="card glass schedule-card">
+<div class="card-head"><h3>Scheduler Status</h3><span class="muted" style="font-size:12px">Reminder policy automation</span></div>
+<div class="mode-policy-grid">
+<div><span class="lbl">Frequency</span><span class="mono" id="schedulerFrequency">-</span></div>
+<div><span class="lbl">Next Run</span><span class="mono" id="schedulerNextRun">-</span></div>
+<div><span class="lbl">Timezone</span><span class="mono" id="schedulerTimezone">-</span></div>
+<div><span class="lbl">Cron</span><span class="mono" id="schedulerCron">-</span></div>
+</div>
+<div class="schedule-note" id="schedulerThresholdNote">-</div>
+</div>
+<div class="row">
+<div class="card glass span-8"><div class="card-head"><h3>30-Day Trend</h3></div><div id="trendChart"></div></div>
+<div class="card glass span-4"><div class="card-head"><h3>Expiry Distribution</h3></div><div id="distChart"></div></div>
+</div>
+<div class="card glass">
+<div class="card-head"><h3>Recent Actions</h3><div style="display:flex; gap:8px; align-items:center"><a class="btn btn-ghost btn-sm" href="/actions">See All</a><button class="btn btn-ghost btn-sm" onclick="loadActions()">Refresh</button></div></div>
+<div class="table-wrap"><table class="tbl"><thead><tr><th>User</th><th>Action</th><th>Days</th><th>Email</th><th>Delivery</th><th>Time</th></tr></thead><tbody id="actionsTbody"><tr><td colspan="6" class="muted">Loading...</td></tr></tbody></table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/dashboard.js?v={{ asset_version }}"></script>
+{% endblock %}

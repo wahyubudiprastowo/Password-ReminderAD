@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCE Dashboard - {% block title %}Dashboard{% endblock %}</title>
+<link rel="stylesheet" href="/static/css/glass.css?v={{ asset_version }}">
+<link rel="stylesheet" href="/static/css/dashboard.css?v={{ asset_version }}">
+<link rel="icon" href="/static/img/logo.svg" type="image/svg+xml">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.53.0/dist/apexcharts.min.js"></script>
+</head>
+<body>
+<div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+<aside class="sidebar glass">
+<div class="brand"><img src="/static/img/logo.svg" alt="PCE"><div class="brand-copy"><h1>PCE</h1><span>v{{ runtime_version }}</span></div></div>
+<nav>
+<a href="/" class="{% if page == 'dashboard' %}active{% endif %}"><span>D</span> Dashboard</a>
+<a href="/users" class="{% if page == 'users' %}active{% endif %}"><span>U</span> Users</a>
+<a href="/runs" class="{% if page == 'runs' %}active{% endif %}"><span>R</span> Run History</a>
+<a href="/logs" class="{% if page == 'logs' %}active{% endif %}"><span>L</span> Live Logs</a>
+<a href="/settings" class="{% if page == 'settings' %}active{% endif %}"><span>S</span> Settings</a>
+</nav>
+<div class="sidebar-footer"><span class="status-dot" id="sseStatus"></span><span id="sseStatusText">Connecting...</span></div>
+</aside>
+<main class="main">
+<header class="topbar glass">
+<div class="crumb">{% block breadcrumb %}Dashboard{% endblock %}</div>
+<div class="actions">
+<button id="btnRunWhatif" class="btn btn-ghost" title="Test policy without changing accounts">Test Policy</button>
+<button id="btnRunNow" class="btn btn-primary" title="Run policy using the active mode">Run Policy</button>
+<button id="btnLogout" class="btn btn-ghost" title="Sign out">Logout</button>
+<button id="themeToggle" class="btn btn-ghost" title="Change theme">Theme</button>
+</div>
+</header>
+<section class="content">{% block content %}{% endblock %}</section>
+</main>
+<script src="/static/js/theme.js?v={{ asset_version }}"></script>
+<script src="/static/js/custom-select.js?v={{ asset_version }}"></script>
+<script src="/static/js/sse-client.js?v={{ asset_version }}"></script>
+<script>
+window.PCE_DEFAULT_API_TOKEN = {{ default_api_token | tojson }};
+window.PCE_TIMEZONE = "Asia/Jakarta";
+window.PCE_DATE_LOCALE = "en-GB";
+window.parseApiDate = function(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value !== "string") {
+    const d = new Date(value);
+    return isNaN(d) ? null : d;
+  }
+  const normalized = value.includes("T")
+    ? value
+    : value.replace(" ", "T") + "Z";
+  const d = new Date(normalized);
+  return isNaN(d) ? null : d;
+};
+window.formatDateTime = function(value, opts) {
+  const d = window.parseApiDate(value);
+  if (!d) return "-";
+  return d.toLocaleString(window.PCE_DATE_LOCALE, Object.assign({
+    timeZone: window.PCE_TIMEZONE,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }, opts || {}));
+};
+window.formatDateOnly = function(value, opts) {
+  const d = window.parseApiDate(value);
+  if (!d) return "-";
+  return d.toLocaleDateString(window.PCE_DATE_LOCALE, Object.assign({
+    timeZone: window.PCE_TIMEZONE,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }, opts || {}));
+};
+window.getPceToken = function() {
+  const token = localStorage.getItem("pce_token") || window.PCE_DEFAULT_API_TOKEN || "";
+  return String(token || "").trim();
+};
+window.getPceHeaders = function(extra) {
+  const headers = Object.assign({}, extra || {});
+  const token = window.getPceToken();
+  if (token) headers["X-API-Token"] = token;
+  return headers;
+};
+async function triggerControlAction(url, confirmMessage, successMessage) {
+  if (confirmMessage && !confirm(confirmMessage)) return;
+  const response = await fetch(url, { method: "POST", headers: window.getPceHeaders() });
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const payload = await response.json();
+        detail = payload.detail || payload.error || JSON.stringify(payload);
+      } else {
+        detail = (await response.text()).trim();
+      }
+    } catch (_) {}
+    throw new Error(detail ? `${response.status} - ${detail}` : String(response.status));
+  }
+  if (successMessage) alert(successMessage);
+}
+document.getElementById("btnRunNow")?.addEventListener("click", async () => {
+  try {
+    await triggerControlAction(
+      "/api/control/trigger?whatif=false",
+      "Run the policy now?\n\nThis will execute reminder and/or enforcement actions based on the active mode.",
+      "Policy execution has started."
+    );
+  } catch (e) {
+    alert("Run Policy failed: " + e.message);
+  }
+});
+document.getElementById("btnRunWhatif")?.addEventListener("click", async () => {
+  try {
+    await triggerControlAction(
+      "/api/control/trigger?whatif=true",
+      "Test the policy now?\n\nThis only calculates reminder/enforcement targets without changing any account.",
+      "Policy test has started."
+    );
+  } catch (e) {
+    alert("Test Policy failed: " + e.message);
+  }
+});
+document.getElementById("btnLogout")?.addEventListener("click", async () => {
+  try {
+    await fetch("/logout", { method: "POST", headers: { "Content-Type": "application/json" } });
+  } catch (_) {}
+  localStorage.removeItem("pce_token");
+  location.href = "/login";
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
